@@ -3,16 +3,17 @@ NAME=philo
 C_FILES= ft_aux.c\
 		 process.c\
 		 main.c\
+		 cycle.c\
 
 
 CC=cc
-CFLAGS=-Wall -Wextra -Werror -pthread  -g
+CFLAGS=-Wall -Wextra -Werror -pthread -g
 REMOVE = rm -rf
 
 all: $(NAME)
 
 $(NAME):
-	$(CC) $(CFLAGS) $(C_FILES) -o $(NAME)
+	$(CC) $(CFLAGS) $(C_FILES) -o $(NAME) -fsanitize=thread
 
 clean:
 	rm -f $(O_FILES)

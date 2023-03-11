@@ -6,7 +6,7 @@
 /*   By: pedperei <pedperei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/26 14:10:22 by pedperei          #+#    #+#             */
-/*   Updated: 2023/03/07 00:03:06 by pedperei         ###   ########.fr       */
+/*   Updated: 2023/03/11 00:14:22 by pedperei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,29 +26,35 @@ typedef struct s_info
 	int				time_to_die;
 	int				time_to_eat;
 	int				time_to_sleep;
+	int				time_to_think;
 	int				times_to_eat;
+	int				any_dead;
+	int				reached_limit;
 	pthread_t		*threads;
 	long int		start;
 	pthread_mutex_t	*forks;
 	pthread_mutex_t	instruction;
-	pthread_mutex_t	eat;
-	pthread_mutex_t	die;
 }					t_info;
 
 typedef struct s_philo
 {
 	long int		last_eat;
-	long int		time_thinking;
-	long int		time_sleeping;
 	int				nbr;
 	int				nbr_eats;
 	int				is_eating;
-	int				fork;
 	t_info			*info;
 }					t_philo;
 
 int					ft_atoi(const char *str);
 void				*ft_calloc(size_t nitems, size_t size);
 int					init_process(t_philo *philos, t_info *info);
+int					eating(t_philo *philo);
+int					sleeping(t_philo *philo);
+int					thinking(t_philo *philo);
+int					take_forks(t_philo *philo);
+int					philo_dead(t_philo *philo);
+long int			calc_time(void);
+void				print_instruction(t_philo *philo, long int now, char c);
+void				ft_usleep(int ms);
 
 #endif

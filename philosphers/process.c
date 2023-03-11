@@ -6,91 +6,95 @@
 /*   By: pedperei <pedperei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/04 14:50:58 by pedperei          #+#    #+#             */
-/*   Updated: 2023/03/08 15:58:37 by pedperei         ###   ########.fr       */
+/*   Updated: 2023/03/11 02:21:42 by pedperei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philo.h"
 
-
-long int	calc_time(void)
+int	kill_threads(t_philo *philo)
 {
-	struct timeval	now;
-	long int		time;
+	int	i;
 
-	gettimeofday(&now, NULL);
-	time = (now.tv_sec * 1000 + now.tv_usec / 1000);
-	return (time);
+	i = 0;
+	while (i < philo->info->nbr_philo)
+	{
+		pthread_mutex_destroy(&philo->info->forks[i]);
+		pthread_detach(philo->info->threads[i]);
+		i++;
+	}
+	pthread_mutex_destroy(&philo->info->instruction);
+	return (1);
 }
 
-void	ft_usleep(int ms)
+void	print_instruction(t_philo *philo, long int now, char c)
 {
-	long int	time;
+	long int	delta;
 
-	time = calc_time();
-	while (calc_time() - time < ms)
-		usleep(ms / 10);
-}
-
-void	print_instruction(int nbr_philo, long int start, long int now, char c)
-{
-	if (c == 'f')
-		printf("%ld %d has taken a fork\n", (now - start), nbr_philo);
-	else if (c == 'e')
-		printf("%ld %d is eating\n", (now - start), nbr_philo);
-	else if (c == 's')
-		printf("%ld %d is sleeping\n", (now - start), nbr_philo);
-	else if (c == 't')
-		printf("%ld %d is thinking\n", (now - start), nbr_philo);
-	else if (c == 'd')
-		printf("%ld %d died\n", (now - start), nbr_philo);
-}
-
-int	eating(t_philo *philo)
-{
+	delta = now - philo->info->start;
 	pthread_mutex_lock(&philo->info->instruction);
-	print_instruction(philo->nbr, philo->info->start, calc_time(), 'e');
+	if (c == 'f')
+		printf("%ld %d has taken a fork\n", delta, philo->nbr);
+	else if (c == 'e')
+	{
+		printf("%ld %d is eating\n", delta, philo->nbr);
+		philo->last_eat = now;
+	}
+	else if (c == 's')
+		printf("%ld %d is sleeping\n", delta, philo->nbr);
+	else if (c == 't')
+		printf("%ld %d is thinking\n", delta, philo->nbr);
+	else if (c == 'd')
+	{
+		printf("%ld %d died\n", delta, philo->nbr);
+		//kill_threads(philo);
+	}
 	pthread_mutex_unlock(&philo->info->instruction);
-	philo->is_eating = 0;
-	if (philo->nbr == 1)
-		pthread_mutex_unlock(&philo->info->forks[philo->info->nbr_philo - 1]);
-	else
-		pthread_mutex_unlock(&philo->info->forks[philo->nbr - 2]);
-	pthread_mutex_unlock(&philo->info->forks[philo->nbr - 1]);
-	philo->last_eat = calc_time();
-	return (0);
 }
 
-int	take_forks(t_philo *philo)
+int	check_philo_eats(t_philo *philo)
 {
-	if (philo->nbr == 1)
-	{
-		pthread_mutex_lock(&philo->info->forks[philo->info->nbr_philo - 1]);
-		print_instruction(philo->nbr, philo->info->start, calc_time(), 'f');
-		philo->is_eating++;
-	}
-	else
-	{
-		pthread_mutex_lock(&philo->info->forks[philo->nbr - 2]);
-		print_instruction(philo->nbr, philo->info->start, calc_time(), 'f');
-		philo->is_eating++;
-	}
-	pthread_mutex_lock(&philo->info->forks[philo->nbr - 1]);
-	print_instruction(philo->nbr, philo->info->start, calc_time(), 'f');
-	philo->is_eating++;
-	if (philo->is_eating == 2)
-		return (1);
-	else
+	int	i;
+
+	i = 0;
+	if (philo[i].info->times_to_eat == -1)
 		return (0);
+	while (i < philo->info->nbr_philo)
+	{
+		if (philo[i].nbr_eats <= philo[i].info->times_to_eat)
+			return (0);
+		i++;
+	}
+	philo->info->reached_limit = 1;
+	return (1);
 }
 
 int	philo_dead(t_philo *philo)
 {
-	if (philo->last_eat < philo->info->time_to_die)
+	int	i;
+
+	i = 0;
+	while (i < philo->info->nbr_philo)
 	{
-		return (0);
+		if (philo[i].nbr_eats == 0)
+		{
+			if ((calc_time()
+					- philo[i].info->start) < philo[i].info->time_to_die)
+				return (0);
+			print_instruction(&philo[i], calc_time(), 'd');
+			philo->info->any_dead = 1;
+			return (1);
+		}
+		else
+		{
+			if ((calc_time() - philo[i].last_eat) < philo[i].info->time_to_die)
+				return (0);
+			print_instruction(&philo[i], calc_time(), 'd');
+			philo->info->any_dead = 1;
+			return (1);
+		}
 	}
-	return (1);
+	return (0);
 }
 
 void	*routine(void *arg)
@@ -98,24 +102,12 @@ void	*routine(void *arg)
 	t_philo	*phil;
 
 	phil = (t_philo *)arg;
-	if (phil->nbr % 2 == 0)
-		usleep(phil->info->time_to_eat);
-	if (phil->info->times_to_eat != -1)
+	while (1)
 	{
-		while ((phil->nbr_eats < phil->info->times_to_eat) && !philo_dead(phil))
-		{
-			take_forks(phil);
-		}
-	}
-	else
-	{
-		while (!philo_dead(phil))
-		{
-			if(take_forks(phil)==1)
-				eating(phil);
-			ft_usleep(phil->info->time_to_eat);
-			//pthread_detach(phil->info->threads[phil->nbr - 1]);
-		}
+		take_forks(phil);
+		eating(phil);
+		sleeping(phil);
+		thinking(phil);
 	}
 	return (0);
 }
@@ -125,9 +117,11 @@ int	init_process(t_philo *philos, t_info *info)
 	int	i;
 	int	*a;
 
-	int j;
-	i = 0;
+	i = -1;
 	info->start = calc_time();
+	while (++i < info->nbr_philo)
+		philos[i].last_eat = info->start;
+	i = 0;
 	while (i < info->nbr_philo)
 	{
 		a = &i;
@@ -136,16 +130,17 @@ int	init_process(t_philo *philos, t_info *info)
 		usleep(200);
 		i++;
 	}
-	j = 0;
-	while (j < info->nbr_philo)
+	while (!philo_dead(philos) && !check_philo_eats(philos))
+		ft_usleep(1);
+	kill_threads(philos);
+	
+	/* i = 0;
+	while (i < info->nbr_philo)
 	{
-		while(1)
-		{
-			if(pthread_join(info->threads[j], NULL) != 0)
-			break;
-		}
-		printf("Terminated %d\n", j);
-		j++;
-	}
+		if (pthread_join(info->threads[i], NULL) != 0)
+			return (0);
+		//printf("Terminated %d\n", j);
+		i++;
+	}  */
 	return (1);
 }

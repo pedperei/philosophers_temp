@@ -6,7 +6,7 @@
 /*   By: pedperei <pedperei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/09/27 19:57:45 by pedperei          #+#    #+#             */
-/*   Updated: 2023/02/04 14:37:00 by pedperei         ###   ########.fr       */
+/*   Updated: 2023/03/10 18:01:09 by pedperei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,4 +50,19 @@ int	ft_atoi(const char *str)
 		i++;
 	}
 	return (sinal * res);
+}
+
+long int	calc_time(void)
+{
+	struct timeval	now;
+	long int		time;
+
+	gettimeofday(&now, NULL);
+	time = (now.tv_sec * 1000 + now.tv_usec / 1000);
+	return (time);
+}
+
+void	ft_usleep(int ms)
+{
+	usleep(ms * 1000);
 }

@@ -6,11 +6,43 @@
 /*   By: pedperei <pedperei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/04 14:18:00 by pedperei          #+#    #+#             */
-/*   Updated: 2023/03/06 22:42:00 by pedperei         ###   ########.fr       */
+/*   Updated: 2023/03/11 02:05:49 by pedperei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philo.h"
+
+void free_info(t_info *info)
+{
+	int i;
+	i = 0;
+	pthread_mutex_destroy(&info->instruction);
+	while (i < info->nbr_philo)
+	{
+		pthread_detach(info->threads[i]);
+		i++;
+	}
+	pthread_mutex_destroy(info->forks);
+	free(info->threads);
+	free(info->forks);
+	free(info);
+}
+
+/* void free_philos(t_philo *philos)
+{
+	int i;
+	int nbr;
+
+	i = 0;
+	nbr = philos->info->nbr_philo;
+	while (i < nbr)
+	{
+		//free(&philos->info->threads[i]);
+		//free(&philos[i]);
+		i++;
+	}
+	free(philos);
+} */
 
 t_info	*init_info(char **argv, int argc)
 {
@@ -27,8 +59,9 @@ t_info	*init_info(char **argv, int argc)
 		info->times_to_eat = ft_atoi(argv[5]);
 	else
 		info->times_to_eat = -1;
+	info->any_dead = 0;
+	info->reached_limit = 0;
 	pthread_mutex_init(&info->instruction, NULL);
-	pthread_mutex_init(&info->die, NULL);
 	info->threads = (pthread_t *)malloc((info->nbr_philo + 1)
 			* sizeof(pthread_t));
 	return (info);
@@ -40,7 +73,8 @@ t_philo	*init_philos_mutex(t_info *info)
 	t_philo	*philos;
 
 	philos = (t_philo *)ft_calloc(info->nbr_philo, sizeof(t_philo));
-	info->forks = (pthread_mutex_t *)ft_calloc(info->nbr_philo, sizeof(pthread_mutex_t));
+	info->forks = (pthread_mutex_t *)ft_calloc(info->nbr_philo,
+			sizeof(pthread_mutex_t));
 	if (!philos || !info->forks)
 		return (0);
 	i = 0;
@@ -48,22 +82,20 @@ t_philo	*init_philos_mutex(t_info *info)
 	{
 		philos[i].info = info;
 		philos[i].nbr = i + 1;
-		philos[i].time_sleeping = 0;
-		philos[i].time_thinking = 0;
-		philos[i].last_eat = 0;
 		philos[i].is_eating = 0;
-		pthread_mutex_init(&philos[i].info->forks[i], NULL);
+		philos[i].nbr_eats = 0;
+		if (pthread_mutex_init(&philos[i].info->forks[i], NULL) != 0)
+			return (0);
 		i++;
 	}
 	pthread_mutex_init(&info->instruction, NULL);
-	pthread_mutex_init(&info->die, NULL);
 	return (philos);
 }
 
 int	main(int argc, char **argv)
 {
-	t_philo *philos;
-	t_info *info;
+	t_philo 	*philos;
+	t_info 		*info;
 
 	if (argc != 5 && argc != 6)
 	{
@@ -77,5 +109,10 @@ int	main(int argc, char **argv)
 		if (!philos)
 			return (0);
 		init_process(philos, info);
+		if (info->reached_limit == 1 || info->any_dead == 1)
+		{
+			//free_info(info);
+			free(philos);
+		}
 	}
 }
