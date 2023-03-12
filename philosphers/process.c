@@ -6,7 +6,7 @@
 /*   By: pedperei <pedperei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/04 14:50:58 by pedperei          #+#    #+#             */
-/*   Updated: 2023/03/11 02:21:42 by pedperei         ###   ########.fr       */
+/*   Updated: 2023/03/12 02:07:00 by pedperei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,11 +19,11 @@ int	kill_threads(t_philo *philo)
 	i = 0;
 	while (i < philo->info->nbr_philo)
 	{
-		pthread_mutex_destroy(&philo->info->forks[i]);
+		//pthread_mutex_destroy(&philo->info->forks[i]);
 		pthread_detach(philo->info->threads[i]);
 		i++;
 	}
-	pthread_mutex_destroy(&philo->info->instruction);
+	//pthread_mutex_destroy(&philo->info->instruction);
 	return (1);
 }
 
@@ -38,7 +38,9 @@ void	print_instruction(t_philo *philo, long int now, char c)
 	else if (c == 'e')
 	{
 		printf("%ld %d is eating\n", delta, philo->nbr);
+		pthread_mutex_lock(&philo->info->l_eat);
 		philo->last_eat = now;
+		pthread_mutex_unlock(&philo->info->l_eat);
 	}
 	else if (c == 's')
 		printf("%ld %d is sleeping\n", delta, philo->nbr);
@@ -47,7 +49,7 @@ void	print_instruction(t_philo *philo, long int now, char c)
 	else if (c == 'd')
 	{
 		printf("%ld %d died\n", delta, philo->nbr);
-		//kill_threads(philo);
+		kill_threads(philo);
 	}
 	pthread_mutex_unlock(&philo->info->instruction);
 }
@@ -55,13 +57,17 @@ void	print_instruction(t_philo *philo, long int now, char c)
 int	check_philo_eats(t_philo *philo)
 {
 	int	i;
+	int nbr_eats;
 
 	i = 0;
+	pthread_mutex_lock(&philo->info->n_eats);
+	nbr_eats = philo[i].nbr_eats;
+	pthread_mutex_unlock(&philo->info->n_eats);
 	if (philo[i].info->times_to_eat == -1)
 		return (0);
 	while (i < philo->info->nbr_philo)
 	{
-		if (philo[i].nbr_eats <= philo[i].info->times_to_eat)
+		if (nbr_eats <= philo[i].info->times_to_eat)
 			return (0);
 		i++;
 	}
@@ -72,11 +78,19 @@ int	check_philo_eats(t_philo *philo)
 int	philo_dead(t_philo *philo)
 {
 	int	i;
+	int nbr_eats;
+	long int last_eat;
 
 	i = 0;
+	pthread_mutex_lock(&philo->info->n_eats);
+	nbr_eats = philo[i].nbr_eats;
+	pthread_mutex_unlock(&philo->info->n_eats);
+	pthread_mutex_lock(&philo->info->l_eat);
+	last_eat = philo[i].last_eat;
+	pthread_mutex_unlock(&philo->info->l_eat);
 	while (i < philo->info->nbr_philo)
 	{
-		if (philo[i].nbr_eats == 0)
+		if (nbr_eats == 0)
 		{
 			if ((calc_time()
 					- philo[i].info->start) < philo[i].info->time_to_die)
@@ -87,7 +101,7 @@ int	philo_dead(t_philo *philo)
 		}
 		else
 		{
-			if ((calc_time() - philo[i].last_eat) < philo[i].info->time_to_die)
+			if ((calc_time() - last_eat) < philo[i].info->time_to_die)
 				return (0);
 			print_instruction(&philo[i], calc_time(), 'd');
 			philo->info->any_dead = 1;
@@ -133,7 +147,6 @@ int	init_process(t_philo *philos, t_info *info)
 	while (!philo_dead(philos) && !check_philo_eats(philos))
 		ft_usleep(1);
 	kill_threads(philos);
-	
 	/* i = 0;
 	while (i < info->nbr_philo)
 	{

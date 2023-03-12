@@ -13,7 +13,8 @@ REMOVE = rm -rf
 all: $(NAME)
 
 $(NAME):
-	$(CC) $(CFLAGS) $(C_FILES) -o $(NAME) -fsanitize=thread
+	$(CC) $(CFLAGS) $(C_FILES) -o $(NAME) 
+#-fsanitize=thread
 
 clean:
 	rm -f $(O_FILES)

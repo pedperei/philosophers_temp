@@ -6,7 +6,7 @@
 /*   By: pedperei <pedperei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/26 14:10:22 by pedperei          #+#    #+#             */
-/*   Updated: 2023/03/11 00:14:22 by pedperei         ###   ########.fr       */
+/*   Updated: 2023/03/12 00:21:01 by pedperei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,8 @@ typedef struct s_info
 	long int		start;
 	pthread_mutex_t	*forks;
 	pthread_mutex_t	instruction;
+	pthread_mutex_t	n_eats;
+	pthread_mutex_t	l_eat;
 }					t_info;
 
 typedef struct s_philo

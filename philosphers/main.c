@@ -6,7 +6,7 @@
 /*   By: pedperei <pedperei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/04 14:18:00 by pedperei          #+#    #+#             */
-/*   Updated: 2023/03/11 02:05:49 by pedperei         ###   ########.fr       */
+/*   Updated: 2023/03/12 02:08:18 by pedperei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,6 +62,8 @@ t_info	*init_info(char **argv, int argc)
 	info->any_dead = 0;
 	info->reached_limit = 0;
 	pthread_mutex_init(&info->instruction, NULL);
+	pthread_mutex_init(&info->n_eats, NULL);
+	pthread_mutex_init(&info->l_eat, NULL);
 	info->threads = (pthread_t *)malloc((info->nbr_philo + 1)
 			* sizeof(pthread_t));
 	return (info);
@@ -88,7 +90,6 @@ t_philo	*init_philos_mutex(t_info *info)
 			return (0);
 		i++;
 	}
-	pthread_mutex_init(&info->instruction, NULL);
 	return (philos);
 }
 
@@ -109,10 +110,11 @@ int	main(int argc, char **argv)
 		if (!philos)
 			return (0);
 		init_process(philos, info);
-		if (info->reached_limit == 1 || info->any_dead == 1)
+		while (1)
 		{
-			//free_info(info);
-			free(philos);
+			if(info->reached_limit == 1 || info->any_dead == 1)
+				break;
 		}
+		//free(philos);
 	}
 }
