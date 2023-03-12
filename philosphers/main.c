@@ -6,7 +6,7 @@
 /*   By: pedperei <pedperei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/04 14:18:00 by pedperei          #+#    #+#             */
-/*   Updated: 2023/03/12 02:08:18 by pedperei         ###   ########.fr       */
+/*   Updated: 2023/03/12 20:05:58 by pedperei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -93,10 +93,25 @@ t_philo	*init_philos_mutex(t_info *info)
 	return (philos);
 }
 
+int	join_threads(t_info *info)
+{
+	int	i;
+
+	i = 0;
+	while (i < info->nbr_philo)
+	{
+		if(pthread_join(info->threads[i], NULL) == 0)
+			return(i);
+		i++;
+	}
+	return (-1);
+}
+
 int	main(int argc, char **argv)
 {
 	t_philo 	*philos;
 	t_info 		*info;
+	int  		i;
 
 	if (argc != 5 && argc != 6)
 	{
@@ -115,6 +130,17 @@ int	main(int argc, char **argv)
 			if(info->reached_limit == 1 || info->any_dead == 1)
 				break;
 		}
+		kill_threads(philos);
+		i = 0;
+		while (i < info->nbr_philo)
+		{
+			if(pthread_join(info->threads[i], NULL) != 0)
+				ft_usleep(1);
+			i++;
+		}
+		//free_info(info);
+		//pthread_mutex_lock(&philos->info->all);
 		//free(philos);
+		//pthread_mutex_unlock(&philos->info->all);
 	}
 }

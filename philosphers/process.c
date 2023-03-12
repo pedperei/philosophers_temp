@@ -6,7 +6,7 @@
 /*   By: pedperei <pedperei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/04 14:50:58 by pedperei          #+#    #+#             */
-/*   Updated: 2023/03/12 02:07:00 by pedperei         ###   ########.fr       */
+/*   Updated: 2023/03/12 19:21:01 by pedperei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,9 +49,10 @@ void	print_instruction(t_philo *philo, long int now, char c)
 	else if (c == 'd')
 	{
 		printf("%ld %d died\n", delta, philo->nbr);
-		kill_threads(philo);
+		//kill_threads(philo);
 	}
-	pthread_mutex_unlock(&philo->info->instruction);
+	if (c != 'd')
+		pthread_mutex_unlock(&philo->info->instruction);
 }
 
 int	check_philo_eats(t_philo *philo)
@@ -118,6 +119,8 @@ void	*routine(void *arg)
 	phil = (t_philo *)arg;
 	while (1)
 	{
+		if (phil->nbr % 2 == 0)
+			ft_usleep(10);
 		take_forks(phil);
 		eating(phil);
 		sleeping(phil);
@@ -141,19 +144,13 @@ int	init_process(t_philo *philos, t_info *info)
 		a = &i;
 		if (pthread_create(&info->threads[i], NULL, &routine, &philos[*a]) != 0)
 			return (0);
-		usleep(200);
 		i++;
 	}
-	while (!philo_dead(philos) && !check_philo_eats(philos))
-		ft_usleep(1);
-	kill_threads(philos);
-	/* i = 0;
-	while (i < info->nbr_philo)
+	while (1)
 	{
-		if (pthread_join(info->threads[i], NULL) != 0)
-			return (0);
-		//printf("Terminated %d\n", j);
-		i++;
-	}  */
+		if(philo_dead(philos) || check_philo_eats(philos))
+			break;
+	}
+	//kill_threads(philos);
 	return (1);
 }

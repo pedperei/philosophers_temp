@@ -6,7 +6,7 @@
 /*   By: pedperei <pedperei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/26 14:10:22 by pedperei          #+#    #+#             */
-/*   Updated: 2023/03/12 00:21:01 by pedperei         ###   ########.fr       */
+/*   Updated: 2023/03/12 19:21:07 by pedperei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,5 +58,5 @@ int					philo_dead(t_philo *philo);
 long int			calc_time(void);
 void				print_instruction(t_philo *philo, long int now, char c);
 void				ft_usleep(int ms);
-
+int					kill_threads(t_philo *philo);
 #endif

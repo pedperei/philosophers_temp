@@ -6,7 +6,7 @@
 /*   By: pedperei <pedperei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/10 17:30:32 by pedperei          #+#    #+#             */
-/*   Updated: 2023/03/12 02:18:09 by pedperei         ###   ########.fr       */
+/*   Updated: 2023/03/12 17:16:14 by pedperei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,17 +15,17 @@
 int	eating(t_philo *philo)
 {
 	print_instruction(philo, calc_time(), 'e');
-	philo->is_eating = 0;
 	ft_usleep(philo->info->time_to_eat);
+	philo->is_eating = 0;
 	if (philo->nbr == 1)
 	{
-		pthread_mutex_unlock(&philo->info->forks[philo->nbr - 1]);
 		pthread_mutex_unlock(&philo->info->forks[philo->info->nbr_philo - 1]);
+		pthread_mutex_unlock(&philo->info->forks[philo->nbr - 1]);
 	}
 	else
 	{
-		pthread_mutex_unlock(&philo->info->forks[philo->nbr - 2]);
 		pthread_mutex_unlock(&philo->info->forks[philo->nbr - 1]);
+		pthread_mutex_unlock(&philo->info->forks[philo->nbr - 2]);
 	}
 	pthread_mutex_lock(&philo->info->n_eats);
 	philo->nbr_eats++;
