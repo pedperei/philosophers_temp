@@ -6,7 +6,7 @@
 /*   By: pedperei <pedperei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/04 14:50:58 by pedperei          #+#    #+#             */
-/*   Updated: 2023/03/14 00:30:27 by pedperei         ###   ########.fr       */
+/*   Updated: 2023/03/14 01:32:32 by pedperei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,14 +62,14 @@ int	check_philo_eats(t_philo *philo)
 	int	nbr_eats;
 
 	i = 0;
-	pthread_mutex_lock(&philo->info->n_eats);
-	nbr_eats = philo[i].nbr_eats;
-	pthread_mutex_unlock(&philo->info->n_eats);
 	if (philo[i].info->times_to_eat == -1)
 		return (0);
 	while (i < philo->info->nbr_philo)
 	{
-		if (nbr_eats <= philo[i].info->times_to_eat)
+		pthread_mutex_lock(&philo->info->n_eats);
+		nbr_eats = philo[i].nbr_eats;
+		pthread_mutex_unlock(&philo->info->n_eats);
+		if (nbr_eats < philo[i].info->times_to_eat)
 			return (0);
 		i++;
 	}
@@ -143,25 +143,56 @@ void	*routine(void *arg)
 	return (0);
 }
 
+void	*one_philo(void *arg)
+{
+	t_philo	*phil;
+	long start;
+	int i;
+	
+	phil = (t_philo *)arg;
+	pthread_mutex_lock(&phil->info->init);
+	start = phil->info->start;
+	pthread_mutex_unlock(&phil->info->init);
+	i = 0;
+	if (start == -1)
+	{
+		pthread_mutex_lock(&phil->info->init);
+		phil->info->start = calc_time();
+		pthread_mutex_unlock(&phil->info->init);
+		phil[i].last_eat = start;
+	}
+	print_instruction(phil, calc_time(), 'f');
+	ft_usleep(phil->info->time_to_die);
+	print_instruction(phil, calc_time(), 'd');
+	return (0);
+}
+
 int	init_process(t_philo *philos, t_info *info)
 {
 	int	i;
 	int	*a;
 
-	/* i = -1;
-	info->start = calc_time();
-	while (++i < info->nbr_philo)
-		philos[i].last_eat = info->start; */
 	i = 0;
-	while (i < info->nbr_philo)
+	if (info->nbr_philo == 1)
 	{
 		a = &i;
-		if (pthread_create(&info->threads[i], NULL, &routine, &philos[*a]) != 0)
+		if (pthread_create(&info->threads[i], NULL, &one_philo,
+				&philos[*a]) != 0)
 			return (0);
-		ft_usleep(1);
-		i++;
 	}
-	ft_usleep(20);
+	else
+	{
+		while (i < info->nbr_philo)
+		{
+			a = &i;
+			if (pthread_create(&info->threads[i], NULL, &routine,
+					&philos[*a]) != 0)
+				return (0);
+			ft_usleep(1);
+			i++;
+		}
+	}
+	ft_usleep(60);
 	while (1)
 	{
 		if (philo_dead(philos) || check_philo_eats(philos))

@@ -6,13 +6,13 @@
 /*   By: pedperei <pedperei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/04 14:18:00 by pedperei          #+#    #+#             */
-/*   Updated: 2023/03/13 23:55:52 by pedperei         ###   ########.fr       */
+/*   Updated: 2023/03/14 01:21:26 by pedperei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philo.h"
 
-void free_info(t_info *info)
+void	free_info(t_info *info)
 {
 	pthread_mutex_destroy(&info->instruction);
 	pthread_mutex_destroy(info->forks);
@@ -23,8 +23,9 @@ void free_info(t_info *info)
 
 /* void free_philos(t_philo *philos)
 {
-	int i;
-	int nbr;
+	int		i;
+	int		nbr;
+	t_info	*info;
 
 	i = 0;
 	nbr = philos->info->nbr_philo;
@@ -36,11 +37,10 @@ void free_info(t_info *info)
 	}
 	free(philos);
 } */
-
 t_info	*init_info(char **argv, int argc)
 {
-	t_info	*info;
-
+	t_info *info;
+	
 	info = (t_info *)ft_calloc(1, sizeof(t_info));
 	if (!info)
 		return (0);
@@ -72,7 +72,7 @@ t_philo	*init_philos_mutex(t_info *info)
 
 	philos = (t_philo *)ft_calloc(info->nbr_philo, sizeof(t_philo));
 	info->forks = (pthread_mutex_t *)ft_calloc(info->nbr_philo,
-			sizeof(pthread_mutex_t));
+												sizeof(pthread_mutex_t));
 	if (!philos || !info->forks)
 		return (0);
 	i = 0;
@@ -81,6 +81,7 @@ t_philo	*init_philos_mutex(t_info *info)
 		philos[i].info = info;
 		philos[i].nbr = i + 1;
 		philos[i].nbr_eats = 0;
+		philos[i].last_eat = 0;
 		if (pthread_mutex_init(&philos[i].info->forks[i], NULL) != 0)
 			return (0);
 		i++;
@@ -95,8 +96,8 @@ int	join_threads(t_info *info)
 	i = 0;
 	while (i < info->nbr_philo)
 	{
-		if(pthread_join(info->threads[i], NULL) == 0)
-			return(i);
+		if (pthread_join(info->threads[i], NULL) == 0)
+			return (i);
 		i++;
 	}
 	return (-1);
@@ -104,9 +105,9 @@ int	join_threads(t_info *info)
 
 int	main(int argc, char **argv)
 {
-	t_philo 	*philos;
-	t_info 		*info;
-	int  		i;
+	t_philo *philos;
+	t_info *info;
+	int i;
 
 	if (argc != 5 && argc != 6)
 	{
@@ -122,19 +123,17 @@ int	main(int argc, char **argv)
 		init_process(philos, info);
 		while (1)
 		{
-			if(info->reached_limit == 1 || info->any_dead == 1)
-				break;
+			if (info->reached_limit == 1 || info->any_dead == 1)
+				break ;
 		}
 		i = 0;
-		while (i < info->nbr_philo)
+		while (i < info->nbr_philo && info->nbr_philo > 1)
 		{
-			if(pthread_join(info->threads[i], NULL) != 0)
+			if (pthread_join(info->threads[i], NULL) != 0)
 				return (0);
 			i++;
 		}
 		free_info(info);
-		//pthread_mutex_lock(&philos->info->all);
 		free(philos);
-		//pthread_mutex_unlock(&philos->info->all);
 	}
 }

@@ -6,7 +6,7 @@
 /*   By: pedperei <pedperei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/10 17:30:32 by pedperei          #+#    #+#             */
-/*   Updated: 2023/03/14 00:26:36 by pedperei         ###   ########.fr       */
+/*   Updated: 2023/03/14 01:21:56 by pedperei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,20 +55,16 @@ int	lock_fork(t_philo *philo, int fork_index)
 
 void	take_forks(t_philo *philo)
 {
-	int		i;
 	long	start;
 
 	pthread_mutex_lock(&philo->info->init);
 	start = philo->info->start;
 	pthread_mutex_unlock(&philo->info->init);
-	i = -1;
 	if (start == -1)
 	{
 		pthread_mutex_lock(&philo->info->init);
 		philo->info->start = calc_time();
 		pthread_mutex_unlock(&philo->info->init);
-		while (++i < philo->info->nbr_philo)
-			philo[i].last_eat = start;
 	}
 	if (philo->nbr == 1)
 		lock_fork(philo, philo->nbr - 1);
