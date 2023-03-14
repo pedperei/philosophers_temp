@@ -6,7 +6,7 @@
 /*   By: pedperei <pedperei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/04 14:50:58 by pedperei          #+#    #+#             */
-/*   Updated: 2023/03/12 19:21:01 by pedperei         ###   ########.fr       */
+/*   Updated: 2023/03/14 00:30:27 by pedperei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,32 +33,33 @@ void	print_instruction(t_philo *philo, long int now, char c)
 
 	delta = now - philo->info->start;
 	pthread_mutex_lock(&philo->info->instruction);
-	if (c == 'f')
-		printf("%ld %d has taken a fork\n", delta, philo->nbr);
-	else if (c == 'e')
+	pthread_mutex_lock(&philo->info->crit);
+	if (philo->info->reached_limit != 1 && philo->info->any_dead != 1)
 	{
-		printf("%ld %d is eating\n", delta, philo->nbr);
-		pthread_mutex_lock(&philo->info->l_eat);
-		philo->last_eat = now;
-		pthread_mutex_unlock(&philo->info->l_eat);
+		if (c == 'f')
+			printf("%ld %d has taken a fork\n", delta, philo->nbr);
+		else if (c == 'e')
+		{
+			printf("%ld %d is eating\n", delta, philo->nbr);
+			pthread_mutex_lock(&philo->info->l_eat);
+			philo->last_eat = now;
+			pthread_mutex_unlock(&philo->info->l_eat);
+		}
+		else if (c == 's')
+			printf("%ld %d is sleeping\n", delta, philo->nbr);
+		else if (c == 't')
+			printf("%ld %d is thinking\n", delta, philo->nbr);
+		else if (c == 'd')
+			printf("%ld %d died\n", delta, philo->nbr);
 	}
-	else if (c == 's')
-		printf("%ld %d is sleeping\n", delta, philo->nbr);
-	else if (c == 't')
-		printf("%ld %d is thinking\n", delta, philo->nbr);
-	else if (c == 'd')
-	{
-		printf("%ld %d died\n", delta, philo->nbr);
-		//kill_threads(philo);
-	}
-	if (c != 'd')
-		pthread_mutex_unlock(&philo->info->instruction);
+	pthread_mutex_unlock(&philo->info->crit);
+	pthread_mutex_unlock(&philo->info->instruction);
 }
 
 int	check_philo_eats(t_philo *philo)
 {
 	int	i;
-	int nbr_eats;
+	int	nbr_eats;
 
 	i = 0;
 	pthread_mutex_lock(&philo->info->n_eats);
@@ -72,15 +73,17 @@ int	check_philo_eats(t_philo *philo)
 			return (0);
 		i++;
 	}
+	pthread_mutex_lock(&philo->info->crit);
 	philo->info->reached_limit = 1;
+	pthread_mutex_unlock(&philo->info->crit);
 	return (1);
 }
 
 int	philo_dead(t_philo *philo)
 {
-	int	i;
-	int nbr_eats;
-	long int last_eat;
+	int			i;
+	int			nbr_eats;
+	long int	last_eat;
 
 	i = 0;
 	pthread_mutex_lock(&philo->info->n_eats);
@@ -97,7 +100,9 @@ int	philo_dead(t_philo *philo)
 					- philo[i].info->start) < philo[i].info->time_to_die)
 				return (0);
 			print_instruction(&philo[i], calc_time(), 'd');
+			pthread_mutex_lock(&philo->info->crit);
 			philo->info->any_dead = 1;
+			pthread_mutex_unlock(&philo->info->crit);
 			return (1);
 		}
 		else
@@ -105,7 +110,9 @@ int	philo_dead(t_philo *philo)
 			if ((calc_time() - last_eat) < philo[i].info->time_to_die)
 				return (0);
 			print_instruction(&philo[i], calc_time(), 'd');
+			pthread_mutex_lock(&philo->info->crit);
 			philo->info->any_dead = 1;
+			pthread_mutex_unlock(&philo->info->crit);
 			return (1);
 		}
 	}
@@ -117,14 +124,21 @@ void	*routine(void *arg)
 	t_philo	*phil;
 
 	phil = (t_philo *)arg;
+	if (phil->nbr % 2 == 0)
+		ft_usleep(1);
 	while (1)
 	{
-		if (phil->nbr % 2 == 0)
-			ft_usleep(10);
 		take_forks(phil);
 		eating(phil);
 		sleeping(phil);
 		thinking(phil);
+		pthread_mutex_lock(&phil->info->crit);
+		if (phil->info->reached_limit == 1 || phil->info->any_dead == 1)
+		{
+			pthread_mutex_unlock(&phil->info->crit);
+			break ;
+		}
+		pthread_mutex_unlock(&phil->info->crit);
 	}
 	return (0);
 }
@@ -134,23 +148,24 @@ int	init_process(t_philo *philos, t_info *info)
 	int	i;
 	int	*a;
 
-	i = -1;
+	/* i = -1;
 	info->start = calc_time();
 	while (++i < info->nbr_philo)
-		philos[i].last_eat = info->start;
+		philos[i].last_eat = info->start; */
 	i = 0;
 	while (i < info->nbr_philo)
 	{
 		a = &i;
 		if (pthread_create(&info->threads[i], NULL, &routine, &philos[*a]) != 0)
 			return (0);
+		ft_usleep(1);
 		i++;
 	}
+	ft_usleep(20);
 	while (1)
 	{
-		if(philo_dead(philos) || check_philo_eats(philos))
-			break;
+		if (philo_dead(philos) || check_philo_eats(philos))
+			break ;
 	}
-	//kill_threads(philos);
 	return (1);
 }

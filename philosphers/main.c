@@ -6,7 +6,7 @@
 /*   By: pedperei <pedperei@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/04 14:18:00 by pedperei          #+#    #+#             */
-/*   Updated: 2023/03/12 20:05:58 by pedperei         ###   ########.fr       */
+/*   Updated: 2023/03/13 23:55:52 by pedperei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,14 +14,7 @@
 
 void free_info(t_info *info)
 {
-	int i;
-	i = 0;
 	pthread_mutex_destroy(&info->instruction);
-	while (i < info->nbr_philo)
-	{
-		pthread_detach(info->threads[i]);
-		i++;
-	}
 	pthread_mutex_destroy(info->forks);
 	free(info->threads);
 	free(info->forks);
@@ -61,9 +54,12 @@ t_info	*init_info(char **argv, int argc)
 		info->times_to_eat = -1;
 	info->any_dead = 0;
 	info->reached_limit = 0;
+	info->start = -1;
 	pthread_mutex_init(&info->instruction, NULL);
 	pthread_mutex_init(&info->n_eats, NULL);
 	pthread_mutex_init(&info->l_eat, NULL);
+	pthread_mutex_init(&info->crit, NULL);
+	pthread_mutex_init(&info->init, NULL);
 	info->threads = (pthread_t *)malloc((info->nbr_philo + 1)
 			* sizeof(pthread_t));
 	return (info);
@@ -84,7 +80,6 @@ t_philo	*init_philos_mutex(t_info *info)
 	{
 		philos[i].info = info;
 		philos[i].nbr = i + 1;
-		philos[i].is_eating = 0;
 		philos[i].nbr_eats = 0;
 		if (pthread_mutex_init(&philos[i].info->forks[i], NULL) != 0)
 			return (0);
@@ -130,17 +125,16 @@ int	main(int argc, char **argv)
 			if(info->reached_limit == 1 || info->any_dead == 1)
 				break;
 		}
-		kill_threads(philos);
 		i = 0;
 		while (i < info->nbr_philo)
 		{
 			if(pthread_join(info->threads[i], NULL) != 0)
-				ft_usleep(1);
+				return (0);
 			i++;
 		}
-		//free_info(info);
+		free_info(info);
 		//pthread_mutex_lock(&philos->info->all);
-		//free(philos);
+		free(philos);
 		//pthread_mutex_unlock(&philos->info->all);
 	}
 }
